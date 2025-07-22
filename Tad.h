@@ -1,238 +1,138 @@
-#include <stdio.h>
-#include <string.h>
+#define MAXPILHA 30
 
-#define MAXFILA 50
+struct TpPilhaM2{
 
-struct TpElemento{
-    char desc[50];
-    char prioridade[30];
-    int tempo;
-
+    int PILHA[MAXPILHA], BASE[MAXPILHA], TOPO[MAXPILHA];
 };
 
-struct TpFila
-{
-    int fim;
-    TpElemento fila[MAXFILA];
-};
+void Inicializar(TpPilhaM2 &PM, int QtdePILHAS){
 
-void Inicializar(TpFila &f){
-    f.fim = -1;
-}
+    int QtdeElem = MAXPILHA / QtdePILHAS;
 
-char FilaCheia(int fim){
-    return fim == MAXFILA -1;
-}
+    for(int i = 0; i <= QtdeElem; i++){
 
-char FilaVazia(int fim){
-    return fim == -1;
-}
-int ConvertePrioridade(char prioridade[30]){
-    if (strcmp(prioridade, "Urgente") == 0) 
-        return 1;
-    else if (strcmp(prioridade, "Normal") == 0) 
-        return 2;
-    else 
-        return 3;
-
-}
-
-void Inserir(TpFila &f,TpElemento elem){
-    if(!FilaCheia(f.fim)){
-        int i = f.fim;
-        int prioridade= ConvertePrioridade(elem.prioridade); // prioridade vai receber um numero
-     while(i >= 0 && prioridade < ConvertePrioridade(f.fila[i].prioridade)) { // vai buscar ate prioridade
-            f.fila[i+1] = f.fila[i]; //remaneja os elemtnso p direita com menor prioridade
-            i--; //decrementa p continuar;
-        }
-        f.fila[i+1] = elem; // vai adiciona priodidade na ordem
-        f.fim++; //add mais 1 no fim pq add
+        PM.BASE[i] = i * QtdePILHAS;
+        PM.TOPO[i] = PM.BASE[i] - 1;
     }
 }
 
-TpElemento Retirar(TpFila &f){
-    TpElemento aux = f.fila[0];
-    for(int i = 0; i < f.fim ; i++)
-        f.fila[i] = f.fila[i+1];
-    f.fim--;
-    return aux;
+char PMCheia(TpPilhaM2 PM, int NP){
+    return PM.TOPO[NP - 1] == PM.BASE[NP] - 1;
 }
 
-TpElemento Inicio(TpFila f){
-    return f.fila[0];
+char PMVazia(TpPilhaM2 PM, int NP){
+    return PM.TOPO[NP - 1] < PM.BASE[NP - 1];
 }
 
-TpElemento Fim(TpFila f){
-    return f.fila[f.fim];
+void PUSH(TpPilhaM2 &PM, int Elemento, int NP){
+    PM.PILHA[++PM.TOPO[NP - 1]] = Elemento;
 }
 
-void ExibirFila(TpFila &f) {
-   for(int i = 0; i <= f.fim; i++){
-    printf("Prioridade: %s, Tempo: %d, Desc: %s \n", f.fila[i].prioridade, f.fila[i].tempo , f.fila[i].desc);
-   }
+char POP(TpPilhaM2 &PM, int NP){
+    return PM.PILHA[PM.TOPO[NP - 1]--];
 }
 
-void LerArquivoTxt(TpFila &f){
-    TpElemento elem;
-    FILE *arq = fopen("Arquivo.txt","r");
-    if(arq == NULL){
-        printf("erro ao abrir arquivo!\n");
+char ElementoTopo(TpPilhaM2 &PM, int NP){
+    return PM.PILHA[PM.TOPO[NP - 1]];
+}
+
+//=============== Funções da torre ===============
+
+char ganhar(TpPilhaM2 PM){
+
+    return PMVazia(PM, 1) && PMVazia(PM, 2) || PMVazia(PM, 1) && PMVazia(PM, 3);
+        
+}
+
+void PrintaTorre(TpPilhaM2 PM,int discos){
+
+    for(int i = discos; i > 0;i--){
+        
+        printf("\n");
+
+        if(i <= PM.TOPO[0] - PM.BASE[0] + 1)
+            printf("\t\t\t\t\t %d       ",POP(PM,1));
+        else
+            printf("\t\t\t\t\t |       ");
+        if(i <= PM.TOPO[1] - PM.BASE[1] + 1)
+            printf(" %d       ",POP(PM,2));
+        else
+            printf(" |       ");
+        if (i <= PM.TOPO[2] - PM.BASE[2] + 1)
+            printf(" %d       ",POP(PM,3));
+        else
+            printf(" |       ");
     }
-    else{
-        fscanf(arq,"%[^;];%d;%[^\n]\n",&elem.prioridade,&elem.tempo,&elem.desc);
-        Inserir(f,elem);  
-        while(!feof(arq)){
-            fscanf(arq,"%[^;];%d;%[^\n]\n", &elem.prioridade,&elem.tempo,&elem.desc);
-            Inserir(f,elem);
-        }
-        fclose(arq);
-        getch();
-    }
-}
-
-float GerarTempo(int tempoespera, int tempocontador){
-    if(tempocontador > 0){
-        return tempoespera / tempocontador;
-    }
-    else
-        return 0;
-}
-
-void Simular(TpFila f, int operadores, int tempoexec){
-    int tempo = 0; int opeocupado=0; int terminado=0;
-    int nterminado=0; int conttarefas=0;
-    int urgente=0;int normal=0;int opcional=0;
-    int tempourgente=0;int temponormal=0;int tempoopcional=0;
-    //define prioridade de cada
-    int prioridadeconcluida[operadores];
-    //define tempo de cada operador
-    int tempooperador[operadores];
-    for(int i = 0; i < operadores; i++){
-        tempooperador[i] = 0;
-        prioridadeconcluida[i] = 0;
-    }
-    while(tempo < tempoexec){
-        printf("Tempo %d\n",tempo);
-        ExibirFila(f);
-            for (int i = 0; i < operadores; i++) {
-                // tarefas, vai pegando
-                if (tempooperador[i] == 0 && !FilaVazia(f.fim)) {
-                    TpElemento elem = Retirar(f);
-                    prioridadeconcluida[i] = ConvertePrioridade(elem.prioridade);
-                    tempooperador[i] = elem.tempo;
-                    opeocupado++;
-                    conttarefas++;
-                    printf("Operador %d iniciou tarefa %s (Duracao: %d)\n", i + 1, elem.desc, elem.tempo);
-                    
-                }
-
-                // esta fazendo
-                if (tempooperador[i] > 0) {
-                    printf("Operador %d executando (%d restantes)\n", i + 1, tempooperador[i] - 1);
-                    tempooperador[i]--;
-
-                    //cabou 
-                    if (tempooperador[i] == 0) {
-                        printf("Operador %d concluiu a tarefa.\n", i + 1);
-                        terminado++;
-                        if (prioridadeconcluida[i]== 1)
-                        {
-                            urgente++;
-                            tempourgente +=tempo;
-                        }
-                            
-                        else if (prioridadeconcluida[i] == 2){
-                            normal++;
-                            temponormal += tempo;
-                        }
-                        else{
-                            opcional++;
-                            tempoopcional +=tempo;
-                        }
-                        opeocupado--;
-                    }
-                }
-            }
-        Sleep(1000);
-        tempo++;
-    }
+    printf("\n\t\t\t\t\t---------------------");
+    printf("\n");
     
+}
 
-    for (int i = 0; i < operadores; i++) {
-        if (tempooperador[i] > 0) 
-            nterminado++;
+void moverdisco(TpPilhaM2 &PM, int origem, int destino) {
+    int disco = POP(PM, origem);
+    PUSH(PM, disco, destino);
+    printf("\n\t\t\t\t   Disco %d da torre %d para a torre %d\n", disco, origem, destino);
+}
+
+void mover(TpPilhaM2 &PM, int origem, int destino) {
+    if (PMVazia(PM, origem)){
+        moverdisco(PM, destino, origem);
+    } else if (PMVazia(PM, destino)) {
+        moverdisco(PM, origem, destino);
+    } else if (ElementoTopo(PM, origem) > ElementoTopo(PM, destino)) {
+        moverdisco(PM, destino, origem);
+    } else {
+        moverdisco(PM, origem, destino);
     }
-    
+}
 
-    nterminado += f.fim +1;
+void Automatico(TpPilhaM2 &PM, int discos) {
+    int origem = 1, destino = 3, auxiliar = 2;
 
-    printf("Fim do tempo! Simulacao encerrada!\n\n");
-    printf("Terminadas: %d\n",terminado);
-    printf("Nao terminadas: %d\n",nterminado);
+    if (discos % 2 == 0) {
+        destino = 2;
+        auxiliar = 3;
+    }
 
-    printf("Concluidas por tipo:\n");
-    printf("Urgente: %d\n",urgente);
-    printf("Normal: %d\n",normal);
-    printf("Opcionais: %d\n\n",opcional);
+    int totalMovimentos = pow(2,discos)-1;
+    for (int i = 1; i <= totalMovimentos; i++) {
+        if (i % 3 == 1) {
+            mover(PM, origem, destino);
+            Sleep(1000);
+            PrintaTorre(PM, discos);
+        } else if (i % 3 == 2) {
+            mover(PM, origem, auxiliar);
+            Sleep(1000);
+            PrintaTorre(PM, discos);
+        } else {
+            mover(PM, auxiliar, destino);
+            Sleep(1000);
+            PrintaTorre(PM, discos);
+        }
+    }
 
-    printf("Tempo medio por cada tipo:\n");
-    printf("Urgente: %.2f\n",GerarTempo(tempourgente,urgente));
-    printf("Normal: %.2f\n",GerarTempo(temponormal,normal));
-    printf("Opcionais: %.2f\n\n",GerarTempo(tempoopcional,opcional));
+    MessageBox(NULL, "Jogo Concluido!", "Acabou", MB_OK | MB_ICONINFORMATION);
 
 }
 
+void JogarManual(TpPilhaM2 &PM, int discos) {
+    int origem, destino;
+    while(!ganhar(PM)) {
+        printf("\t\t\t Torre de origem [1, 2, 3] e Torre destino [1, 2, 3]: ");
+        scanf("%d %d", &origem, &destino);
 
-void Moldura (int CI, int LI,int CF,int LF, int frente,int fundo){
-	int a = 0;
-	textcolor(frente);
-	textbackground(fundo);
-	gotoxy(CI,LI); printf("%c",201);
-	gotoxy(CF,LI); printf("%c",187);
-	gotoxy(CI,LF); printf("%c",200);
-	gotoxy(CF,LF); printf("%c",188);
-	
-	for (a = CI+1 ; a < CF; a++){
-		gotoxy(a,LI); printf("%c", 205);
-		gotoxy(a, LF); printf("%c",205);
-	}
-	
-	for (a = LI+1 ; a < LF; a++){
-		gotoxy(CI,a); printf("%c", 186);
-		gotoxy(CF,a); printf("%c",186);
-	}
-	
-	textcolor(7);
-	textbackground(0);
-	printf("\n\n\n\n");
-}
+        if (PMVazia(PM, origem)) {
+            
+            printf("\t\t\t\tTorre de origem esta vazia! Escolha outra.\n");
+        } else if (!PMVazia(PM, destino) && ElementoTopo(PM, origem) > ElementoTopo(PM, destino)) {
 
-void FormPrincipal(){
-    system("cls");
-	Moldura (1,1,120,30,11,6); //amarelo
-	Moldura (2,2,119,5,15,2); //verde
-	gotoxy(56,4); printf("LEANDRAOTOYS");
-	Moldura (2,6,119,29,7,3); //azul
-}
+            printf("\t\t\tMovimento invalido! Disco maior não pode ser colocado sobre disco menor.\n");
+        } else {
 
-void LimpaTela(){
-	for (int i=13;i<23;i++){
-		gotoxy(34,i);
-		printf("                                                       ");
-	}
-}
+            moverdisco(PM, origem, destino);
+        }
 
-char Menu(){
-    system("cls");
-    FormPrincipal();
-    gotoxy(10,60);
-    printf("Nome RA");
-}
-
-void LinhaFinal (int &i){
-	if (i == 24){
-		FormPrincipal();
-		i = 8;
-		gotoxy(34,i);
-	}
+        PrintaTorre(PM, discos);
+    }
+    MessageBox(NULL, "Voce venceu!", "Parabens", MB_OK | MB_ICONINFORMATION);
 }
