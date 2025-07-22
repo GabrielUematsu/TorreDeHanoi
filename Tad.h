@@ -1,5 +1,4 @@
 #define MAXPILHA 30
-
 struct TpPilhaM2{
 
     int PILHA[MAXPILHA], BASE[MAXPILHA], TOPO[MAXPILHA];
